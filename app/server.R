@@ -1,6 +1,7 @@
 library(shiny)
 library(tidyverse)
 library(plotly)
+library(RColorBrewer)
 
 loadRData <- function(fileName){
     #loads an RData file, and returns it
@@ -48,31 +49,34 @@ function(input, output, session) {
     observe({
         req(dataset())
         if (input$filterBy != "All"){
+          try({
             updateSelectInput(session, "filterVal",
                               choices = c("All",unique(dataset()[input$filterBy]))
             )
+          }, silent = TRUE)
+
         }
 
     })
 
     observe({
-        req(filteredDataset())
+        req(dataset())
         updateSelectInput(session, "y",
-                          choices = names(filteredDataset()))
+                          choices = names(dataset()))
         updateSelectInput(session, "x",
-                          choices = names(filteredDataset()))
+                          choices = names(dataset()))
         updateSelectInput(session, "color",
-                          choices = c(None='.', names(filteredDataset())))
+                          choices = c(None='.', names(dataset())))
         updateSelectInput(session, "size",
-                          choices = c(None='.', names(filteredDataset())))
+                          choices = c(None='.', names(dataset())))
         updateSelectInput(session, "facet_row",
-                          choices = c(None='.', names(filteredDataset())))
+                          choices = c(None='.', names(dataset())))
         updateSelectInput(session, "facet_col",
-                          choices = c(None='.', names(filteredDataset())))
+                          choices = c(None='.', names(dataset())))
         updateSelectInput(session, "frame",
-                          choices = c(None='.', names(filteredDataset())))
+                          choices = c(None='.', names(dataset())))
         updateSelectInput(session, "groupBy",
-                          choices = c(None='.', names(filteredDataset())))
+                          choices = c(None='.', names(dataset())))
 
     })
 
@@ -80,24 +84,49 @@ function(input, output, session) {
     output$plot <- renderPlotly({
         req(filteredDataset())
         req(input$y != "None")
-        p <- ggplot(data = filteredDataset(),
+        df <- filteredDataset()
+        p <- ggplot(data = df,
                     mapping = aes_string(x=input$x, y=input$y))
 
         if(input$scatter){
-            p <- p + geom_point()
+            p <- p + geom_point(size = input$plotPointSize)
         }
         if(input$boxplot){
             p <- p + geom_boxplot()
         }
-        if(input$lines){
-            p <- p + geom_line(data = filteredDataset(),
-                               mapping = aes_string(x= input$x,
-                                                    y= input$y,
-                                                    group = input$groupBy))
+
+        if(input$groupBy != '.'){
+          p <- p + geom_line(inherit.aes = FALSE,
+                             mapping = aes_string(x=input$x,
+                                                  y=input$y,
+                                                  group = input$groupBy))
         }
+        if(input$flipScale){
+          direction <- -1
+        }
+        else{
+          direction <- 1
+        }
+
         if (input$color != '.'){
-            p <- p + aes_string(color=input$color)
+          colVar <- paste0("`",input$color,"`")
+          print(colVar)
+          print(class(df[[input$color]]))
+          if (class(df[[input$color]]) == "numeric" |
+              class(df[[input$color]]) == "matrix" |
+              class(df[[input$color]]) == "array"  |
+              class(df[[input$color]]) == "integer"){
+            p <- p + aes_string(color=colVar)
+            if (input$colorScale != "Auto"){
+              p <- p + scale_color_distiller(palette = input$colorScale, direction = direction)
+            }
+          }
+          else{
+            p <- p + aes_string(color=colVar)
+          }
         }
+
+
         if (input$size != '.'){
             p <- p + aes_string(size=input$size)
         }
@@ -113,7 +142,7 @@ function(input, output, session) {
         }
 
         if (input$jitter){
-            p <- p + geom_jitter()
+            p <- p + geom_jitter(size = input$plotPointSize, width = input$jitterWidth)
         }
         if (input$smooth){
             p <- p + geom_smooth(se = F)
@@ -130,10 +159,13 @@ function(input, output, session) {
                 theme(plot.title = element_text(face = "bold",
                                                 size = 20))
         }
-        p <- p + theme_light()
+        p <- p + get(input$plotTheme)()
 
         finalplot <<- p
-        print(ggplotly(p))
+        try({
+          print(ggplotly(p))
+        }, silent = TRUE)
+
 
     })
     plotInput = function() {
