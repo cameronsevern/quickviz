@@ -89,7 +89,7 @@ function(input, output, session) {
                     mapping = aes_string(x=input$x, y=input$y))
 
         if(input$scatter){
-            p <- p + geom_point(size = input$plotPointSize)
+            p <- p + geom_point()
         }
         if(input$boxplot){
             p <- p + geom_boxplot()
@@ -142,7 +142,7 @@ function(input, output, session) {
         }
 
         if (input$jitter){
-            p <- p + geom_jitter(size = input$plotPointSize, width = input$jitterWidth)
+            p <- p + geom_jitter(width = input$jitterWidth)
         }
         if (input$smooth){
             p <- p + geom_smooth(se = F)

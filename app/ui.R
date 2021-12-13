@@ -68,12 +68,6 @@ fluidPage(
                                              "YlGnBu", "YlOrBr", "YlOrRd"
                                            )),
                                checkboxInput("flipScale","Flip Scale"),
-                               numericInput(inputId = "plotPointSize",
-                                            label = "Constant Point Size",
-                                            value = 1,
-                                            min = 0,
-                                            max = 10,
-                                            step = 0.1),
                                numericInput(inputId = "jitterWidth",
                                             label = "Jitter Spread",
                                             value = 0.15,
